@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { AuthGate } from "@/components/AuthGate";
 import { Navbar } from "@/components/Navbar";
 import { PostCard } from "@/components/PostCard";
-import { db } from "@/lib/storage";
+import { api } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 import type { Collection, Post } from "@/lib/types";
 
@@ -22,9 +22,13 @@ function CollectionDetail() {
   const [posts, setPosts] = useState<Post[]>([]);
 
   useEffect(() => {
-    const c = db.getCollections().find((x) => x.slug === slug) || null;
-    setCollection(c);
-    if (c) setPosts(db.getPosts().filter((p) => p.collectionId === c.id));
+    void Promise.all([api.collections.list(), api.posts.list()]).then(
+      ([collectionItems, postItems]) => {
+        const c = collectionItems.find((x) => x.slug === slug) || null;
+        setCollection(c);
+        setPosts(c ? postItems.filter((p) => p.collectionId === c.id) : []);
+      },
+    );
   }, [slug]);
 
   if (!collection) {
@@ -33,7 +37,10 @@ function CollectionDetail() {
         <Navbar />
         <div className="max-w-6xl mx-auto px-6 py-32 text-center">
           <p className="text-muted-foreground">Collection not found.</p>
-          <Link to="/collections" className="text-accent text-xs font-mono uppercase tracking-widest mt-4 inline-block">
+          <Link
+            to="/collections"
+            className="text-accent text-xs font-mono uppercase tracking-widest mt-4 inline-block"
+          >
             ← {t("back")}
           </Link>
         </div>
@@ -45,15 +52,22 @@ function CollectionDetail() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <main className="max-w-6xl mx-auto px-6 py-16">
-        <Link to="/collections" className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-accent">
+        <Link
+          to="/collections"
+          className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground hover:text-accent"
+        >
           ← {t("collections")}
         </Link>
-        <h1 className="text-5xl font-display mt-4 mb-12">{tr(collection.name)}</h1>
+        <h1 className="text-5xl font-display mt-4 mb-12">
+          {tr(collection.name)}
+        </h1>
         {posts.length === 0 ? (
           <p className="text-sm text-muted-foreground">{t("no_posts")}</p>
         ) : (
           <div className="grid gap-12">
-            {posts.map((p) => <PostCard key={p.id} post={p} />)}
+            {posts.map((p) => (
+              <PostCard key={p.id} post={p} />
+            ))}
           </div>
         )}
       </main>

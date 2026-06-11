@@ -14,16 +14,24 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    const u = login(email, password);
-    if (!u) {
+    setSubmitting(true);
+    try {
+      const u = await login(email, password);
+      if (!u) {
+        setError(t("invalid_login"));
+        return;
+      }
+      navigate({ to: u.role === "ADMIN" ? "/admin" : "/home", replace: true });
+    } catch {
       setError(t("invalid_login"));
-      return;
+    } finally {
+      setSubmitting(false);
     }
-    navigate({ to: u.role === "ADMIN" ? "/admin" : "/home", replace: true });
   };
 
   return (
@@ -34,7 +42,9 @@ function LoginPage() {
           <p className="font-display text-4xl leading-tight mb-4 text-balance">
             A quiet space for <span className="italic">manga</span> scholarship.
           </p>
-          <p className="text-xs font-mono uppercase tracking-widest opacity-60">© 2026 EA Research Studio</p>
+          <p className="text-xs font-mono uppercase tracking-widest opacity-60">
+            © 2026 EA Research Studio
+          </p>
         </div>
       </div>
       <div className="flex items-center justify-center px-6 py-16">
@@ -66,12 +76,19 @@ function LoginPage() {
             </Field>
           </div>
           {error && <p className="text-xs text-destructive">{error}</p>}
-          <button type="submit" className="btn-primary w-full">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="btn-primary w-full disabled:opacity-60"
+          >
             {t("sign_in")}
           </button>
           <p className="text-xs text-muted-foreground text-center">
             {t("no_account")}{" "}
-            <Link to="/register" className="text-accent border-b border-accent/30">
+            <Link
+              to="/register"
+              className="text-accent border-b border-accent/30"
+            >
               {t("create_one")}
             </Link>
           </p>
@@ -92,7 +109,13 @@ function LoginPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <label className="block">
       <span className="block text-[10px] font-mono uppercase tracking-widest text-muted-foreground mb-1">

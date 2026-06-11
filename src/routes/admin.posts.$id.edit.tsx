@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { PostEditor } from "@/components/PostEditor";
-import { db } from "@/lib/storage";
+import { api } from "@/lib/api-client";
 import { useI18n } from "@/lib/i18n";
 import type { Post } from "@/lib/types";
 
@@ -16,17 +16,25 @@ function EditPost() {
   const [post, setPost] = useState<Post | null>(null);
 
   useEffect(() => {
-    setPost(db.getPosts().find((p) => p.id === id) || null);
+    void api.posts
+      .get(id)
+      .then(setPost)
+      .catch(() => setPost(null));
   }, [id]);
 
   if (!post) return <p className="text-sm text-muted-foreground">…</p>;
 
   return (
     <div>
-      <h2 className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground mb-8">{t("edit")}</h2>
+      <h2 className="text-sm font-mono uppercase tracking-[0.2em] text-muted-foreground mb-8">
+        {t("edit")}
+      </h2>
       <PostEditor
         initial={post}
-        onSave={(p) => { db.setPosts(db.getPosts().map((x) => x.id === p.id ? p : x)); navigate({ to: "/admin" }); }}
+        onSave={async (p) => {
+          await api.posts.update(p);
+          navigate({ to: "/admin" });
+        }}
         onCancel={() => navigate({ to: "/admin" })}
       />
     </div>

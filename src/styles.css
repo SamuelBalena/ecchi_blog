@@ -30,9 +30,9 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  --font-display: 'Playfair Display', Georgia, serif;
-  --font-sans: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --font-display: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
 
   --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
 }
@@ -61,23 +61,96 @@
 }
 
 @keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-reveal {
   animation: fadeInUp 0.7s var(--ease-out-expo) both;
 }
 
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  scrollbar-width: none;
+}
 
 @layer base {
-  * { border-color: var(--color-border); }
+  * {
+    border-color: var(--color-border);
+  }
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
   }
-  h1, h2, h3, h4 { font-family: var(--font-display); }
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+  }
+}
+
+@layer components {
+  .rich-editor .codex-editor,
+  .rich-editor .ce-block__content,
+  .rich-editor .ce-toolbar__content {
+    max-width: 100%;
+  }
+
+  .rich-editor .codex-editor__redactor {
+    padding-bottom: 96px !important;
+  }
+
+  .rich-editor .ce-paragraph,
+  .rich-editor .cdx-list,
+  .rich-editor .cdx-checklist,
+  .rich-editor .cdx-quote {
+    font-size: 0.95rem;
+    line-height: 1.75;
+  }
+
+  .rich-editor .ce-header {
+    font-family: var(--font-display);
+    line-height: 1.2;
+  }
+
+  .rich-editor .ce-toolbar__plus,
+  .rich-editor .ce-toolbar__settings-btn,
+  .rich-editor .ce-inline-toolbar,
+  .rich-editor .ce-conversion-toolbar,
+  .rich-editor .ce-settings,
+  .rich-editor .cdx-search-field {
+    color: var(--color-foreground);
+    background: var(--color-card);
+    border-color: var(--color-border);
+  }
+
+  .rich-editor .ce-popover,
+  .rich-editor .ce-popover-item,
+  .rich-editor .ce-conversion-tool {
+    color: var(--color-foreground);
+    background: var(--color-card);
+  }
+
+  .rich-editor .ce-popover-item:hover,
+  .rich-editor .ce-conversion-tool:hover,
+  .rich-editor .ce-toolbar__plus:hover,
+  .rich-editor .ce-toolbar__settings-btn:hover,
+  .rich-editor .ce-inline-tool:hover {
+    background: var(--color-muted);
+  }
+
+  .rich-editor .cdx-input,
+  .rich-editor .cdx-settings-button {
+    border-color: var(--color-border);
+  }
 }

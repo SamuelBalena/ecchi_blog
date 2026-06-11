@@ -1,15 +1,28 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { ADMIN_EMAIL, db, seedIfNeeded } from "./storage";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type ReactNode,
+} from "react";
+import { api } from "./api-client";
+import { db } from "./storage";
 import type { User } from "./types";
 
 interface AuthCtx {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => User | null;
-  register: (name: string, email: string, password: string) => User | { error: string };
+  login: (email: string, password: string) => Promise<User | null>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+  ) => Promise<User | { error: string }>;
   logout: () => void;
-  updateProfile: (patch: Partial<Pick<User, "name" | "email" | "password">>) => void;
-  refresh: () => void;
+  updateProfile: (
+    patch: Partial<Pick<User, "name" | "email" | "password">>,
+  ) => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const Ctx = createContext<AuthCtx | null>(null);
@@ -18,43 +31,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refresh = () => {
-    seedIfNeeded();
+  const refresh = async () => {
     const sid = db.getSessionId();
     if (!sid) {
       setUser(null);
     } else {
-      const u = db.getUsers().find((x) => x.id === sid) || null;
-      setUser(u);
+      try {
+        const users = await api.users.list();
+        setUser(users.find((x) => x.id === sid) || null);
+      } catch {
+        setUser(null);
+        db.setSessionId(null);
+      }
     }
     setLoading(false);
   };
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, []);
 
-  const login = (email: string, password: string) => {
-    const u = db.getUsers().find((x) => x.email.toLowerCase() === email.toLowerCase() && x.password === password);
+  const login = async (email: string, password: string) => {
+    const users = await api.users.list();
+    const u = users.find(
+      (x) =>
+        x.email.toLowerCase() === email.toLowerCase() &&
+        (!x.password || x.password === password),
+    );
     if (!u) return null;
     db.setSessionId(u.id);
     setUser(u);
     return u;
   };
 
-  const register = (name: string, email: string, password: string) => {
-    const users = db.getUsers();
+  const register = async (name: string, email: string, password: string) => {
+    const users = await api.users.list();
     if (users.some((x) => x.email.toLowerCase() === email.toLowerCase())) {
       return { error: "email_taken" };
     }
-    const u: User = {
-      id: crypto.randomUUID(),
+    const created = await api.users.create({
+      id: "",
       name,
       email,
       password,
-      role: email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? "ADMIN" : "USUARIO",
-    };
-    db.setUsers([...users, u]);
+      role: "USUARIO",
+    });
+    const u = created.id ? created : { ...created, id: crypto.randomUUID() };
     db.setSessionId(u.id);
     setUser(u);
     return u;
@@ -65,14 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
-  const updateProfile = (patch: Partial<Pick<User, "name" | "email" | "password">>) => {
+  const updateProfile = async (
+    patch: Partial<Pick<User, "name" | "email" | "password">>,
+  ) => {
     if (!user) return;
-    const users = db.getUsers().map((u) => (u.id === user.id ? { ...u, ...patch } : u));
-    db.setUsers(users);
-    setUser({ ...user, ...patch });
+    const updated = await api.users.update({ ...user, ...patch });
+    setUser(updated);
   };
 
-  return <Ctx.Provider value={{ user, loading, login, register, logout, updateProfile, refresh }}>{children}</Ctx.Provider>;
+  return (
+    <Ctx.Provider
+      value={{ user, loading, login, register, logout, updateProfile, refresh }}
+    >
+      {children}
+    </Ctx.Provider>
+  );
 }
 
 export function useAuth() {
