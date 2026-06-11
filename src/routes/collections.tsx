@@ -1,4 +1,9 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Link,
+  Outlet,
+  useRouterState,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AuthGate } from "@/components/AuthGate";
 import { Navbar } from "@/components/Navbar";
@@ -9,10 +14,19 @@ import type { Collection, Post } from "@/lib/types";
 export const Route = createFileRoute("/collections")({
   component: () => (
     <AuthGate>
-      <CollectionsPage />
+      <CollectionsRoute />
     </AuthGate>
   ),
 });
+
+function CollectionsRoute() {
+  const isCollectionsIndex = useRouterState({
+    select: (state) =>
+      state.location.pathname.replace(/\/$/, "") === "/collections",
+  });
+
+  return isCollectionsIndex ? <CollectionsPage /> : <Outlet />;
+}
 
 function CollectionsPage() {
   const { tr, t } = useI18n();

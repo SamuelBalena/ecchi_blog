@@ -20,16 +20,33 @@ function CollectionDetail() {
   const { tr, t } = useI18n();
   const [collection, setCollection] = useState<Collection | null>(null);
   const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    void Promise.all([api.collections.list(), api.posts.list()]).then(
-      ([collectionItems, postItems]) => {
+    setLoading(true);
+    void Promise.all([api.collections.list(), api.posts.list()])
+      .then(([collectionItems, postItems]) => {
         const c = collectionItems.find((x) => x.slug === slug) || null;
         setCollection(c);
-        setPosts(c ? postItems.filter((p) => p.collectionId === c.id) : []);
-      },
-    );
+        setPosts(c ? postItems.filter((p) => belongsToCollection(p, c)) : []);
+      })
+      .catch(() => {
+        setCollection(null);
+        setPosts([]);
+      })
+      .finally(() => setLoading(false));
   }, [slug]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-6xl mx-auto px-6 py-32">
+          <p className="text-sm text-muted-foreground">...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!collection) {
     return (
@@ -73,4 +90,27 @@ function CollectionDetail() {
       </main>
     </div>
   );
+}
+
+function belongsToCollection(post: Post, collection: Collection) {
+  const value = post.collectionId as unknown;
+
+  if (typeof value === "string") {
+    return value === collection.id || value === collection.slug;
+  }
+
+  if (value && typeof value === "object") {
+    const record = value as {
+      id?: unknown;
+      _id?: unknown;
+      slug?: unknown;
+    };
+    return (
+      record.id === collection.id ||
+      record._id === collection.id ||
+      record.slug === collection.slug
+    );
+  }
+
+  return false;
 }
